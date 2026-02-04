@@ -266,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <?php endif; ?>
         </select>
       </div>
-    </div> <!-- ✅ FIX QUAN TRỌNG: đóng .row để layout không bị lệch -->
+    </div> <!-- đóng .row để layout không bị lệch -->
 
     <div class="field">
       <label>Título</label>
@@ -292,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="field">
       <label>Descripción detallada</label>
-      <!-- FIX 1: max 1000 + để full ngang (nhờ đóng row ở trên) -->
+      <!--  max 1000 + để full ngang (nhờ đóng row ở trên) -->
       <textarea
         name="description"
         id="description"
@@ -307,7 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="hr"></div>
 
-    <!-- FIX 2: checkbox đặt dưới phần text -->
+    <!--  checkbox đặt dưới phần text -->
     <div class="field">
       <label>Denuncia anónima</label>
       <div class="small">Si es anónima, no es necesario ingresar nombre/correo.</div>
@@ -347,7 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-// FIX 1: counter 1000 chars
+// counter 1000 chars
 (function(){
   const ta = document.getElementById('description');
   const out = document.getElementById('descCount');

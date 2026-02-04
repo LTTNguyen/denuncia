@@ -2,11 +2,7 @@
 if (defined('DENUNCIA_BOOTSTRAP_LOADED')) { return; }
 define('DENUNCIA_BOOTSTRAP_LOADED', 1);
 
-// Standalone Denuncias Portal (Demo)
 
-
-
-// Show errors for demo (disable in production)
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
@@ -31,7 +27,7 @@ function redirect(string $path): void {
   exit;
 }
 
-// ---------------- Session isolation ----------------
+// Session isolation
 if (session_status() === PHP_SESSION_NONE) {
   session_name('DENUNCIASESSID');
 
@@ -47,7 +43,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
   session_start();
 
-// ---- Remember company context (keep selection across pages) ----
+// Remember company context (keep selection across pages)
 $__cid = (int)($_GET['company_id'] ?? ($_POST['company_id'] ?? ($_SESSION['company_id'] ?? 0)));
 if ($__cid > 0) {
   $_SESSION['company_id'] = $__cid;
@@ -58,7 +54,7 @@ function current_company_id(): int {
 
 }
 
-// ---------------- Load DB config ----------------
+//Load DB config
 $cfg = __DIR__ . '/config_denuncia.php';
 if (!is_file($cfg)) {
   http_response_code(500);
@@ -67,7 +63,7 @@ if (!is_file($cfg)) {
 }
 require_once $cfg;
 
-// ---------------- DB connection ----------------
+// DB connection
 function db_conn(): mysqli {
   if (isset($GLOBALS['denuncia_db']) && $GLOBALS['denuncia_db'] instanceof mysqli) {
     return $GLOBALS['denuncia_db'];
@@ -143,7 +139,7 @@ if (!function_exists('portal_get_resources')) {
 }
 
 
-// ---- Branding helpers ----
+//Branding helpers
 function portal_company_logo_path(array $c): string {
   $p = trim((string)($c['logo_path'] ?? ''));
   if ($p !== '') return $p;

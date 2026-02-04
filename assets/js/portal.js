@@ -29,7 +29,6 @@ async function loadCategories(companyId, selectId){
 
 /**
  * Auto calendar (flatpickr) for inputs with class ".js-date"
- * Put this at the END of portal.js
  */
 document.addEventListener('DOMContentLoaded', () => {
   // If flatpickr is not loaded, do nothing
