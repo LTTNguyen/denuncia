@@ -77,7 +77,7 @@ $resources = $company_id > 0 ? portal_get_resources($db, $company_id) : [];
 
     <div class="hr"></div>
     <div class="small">
-      * Demo. En producción (Opción A) se recomienda subdominio + HTTPS + hardening.
+      * Demo. En producción.
     </div>
   </div>
 </div>
