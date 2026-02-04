@@ -2,19 +2,19 @@
 
 Portal web para **recibir y gestionar denuncias** (canal de ética / cumplimiento / seguridad) de forma **anónima o identificada**, con **seguimiento por Clave + Contraseña**.
 
-> ⚠️ **Estado:** Demo/MVP. Funciona bien para pruebas internas. Antes de producción se recomienda hardening (HTTPS, rate limit, CAPTCHA, CSRF, logging, backups, etc.).
+> ⚠️ **Estado:** Demo
 
 ---
 
 ## ✨ Funcionalidades
 
-- ✅ **Multi-empresa** (branding por empresa: logo, nombre, recursos)
-- ✅ **Categorías dinámicas** por empresa (cargadas vía API)
-- ✅ **Ingreso de denuncia** (título, ubicación, fecha del evento, descripción)
-- ✅ **Denuncia anónima** opcional
-- ✅ **Seguimiento** con `Clave de Reporte` + contraseña
-- ✅ **Vista de Caso** con historial y mensajes
-- ✅ UI limpia, responsive + datepicker para fecha del evento
+- **Multi-empresa** (branding por empresa: logo, nombre, recursos)
+- **Categorías dinámicas** por empresa (cargadas vía API)
+- **Ingreso de denuncia** (título, ubicación, fecha del evento, descripción)
+- **Denuncia anónima** opcional
+- **Seguimiento** con `Clave de Reporte` + contraseña
+- **Vista de Caso** con historial y mensajes
+- UI limpia, responsive + datepicker para fecha del evento
 
 ---
 
