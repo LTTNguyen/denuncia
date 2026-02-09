@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // If flatpickr is not loaded, do nothing
   if (!window.flatpickr) return;
 
-  // Spanish locale (depends on how you included flatpickr locale file)
+  // Spanish locale (depends on how we included flatpickr locale file)
   const localeEs = (window.flatpickr.l10ns && window.flatpickr.l10ns.es)
     ? window.flatpickr.l10ns.es
     : null;

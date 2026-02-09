@@ -178,3 +178,244 @@ function portal_link(string $path, bool $with_company = true): string {
   }
   return $url;
 }
+
+// =========================================================
+// EMAIL NOTIFICATIONS (new report)
+// =========================================================
+
+function portal_mail_cfg(): array {
+  global $DENUNCIA_MAIL;
+  return is_array($DENUNCIA_MAIL ?? null) ? $DENUNCIA_MAIL : [];
+}
+
+function portal_mail_enabled(): bool {
+  $cfg = portal_mail_cfg();
+  return (bool)($cfg['enabled'] ?? false);
+}
+
+function portal_db_table_exists(mysqli $db, string $table): bool {
+  static $cache = [];
+  $key = strtolower($table);
+  if (array_key_exists($key, $cache)) return (bool)$cache[$key];
+
+  $safe = $db->real_escape_string($table);
+  $sql = "SHOW TABLES LIKE '{$safe}'";
+  $res = $db->query($sql);
+  $exists = ($res && $res->num_rows > 0);
+  if ($res) $res->free();
+  $cache[$key] = $exists;
+  return $exists;
+}
+
+/**
+ * Returns recipient emails for notifications.
+ * Priority:
+ * 1) DB: portal_notify_recipient (company + category specific or company-wide)
+ * 2) config_denuncia.php: $DENUNCIA_MAIL['fallback_recipients']
+ */
+function portal_get_notify_recipients(mysqli $db, int $company_id, int $category_id): array {
+  $emails = [];
+
+  if ($company_id > 0 && portal_db_table_exists($db, 'portal_notify_recipient')) {
+    $sql = "
+      SELECT DISTINCT email
+      FROM portal_notify_recipient
+      WHERE is_active=1
+        AND company_id=?
+        AND (category_id IS NULL OR category_id=?)
+      ORDER BY email
+    ";
+    $stmt = $db->prepare($sql);
+    if ($stmt) {
+      $stmt->bind_param('ii', $company_id, $category_id);
+      $stmt->execute();
+      $res = $stmt->get_result();
+      while ($r = $res->fetch_assoc()) {
+        $e = strtolower(trim((string)($r['email'] ?? '')));
+        if ($e !== '' && filter_var($e, FILTER_VALIDATE_EMAIL)) $emails[] = $e;
+      }
+      $stmt->close();
+    }
+  }
+
+  if (empty($emails)) {
+    $cfg = portal_mail_cfg();
+    $fallback = $cfg['fallback_recipients'] ?? [];
+    if (is_array($fallback)) {
+      foreach ($fallback as $e) {
+        $e = strtolower(trim((string)$e));
+        if ($e !== '' && filter_var($e, FILTER_VALIDATE_EMAIL)) $emails[] = $e;
+      }
+    }
+  }
+
+  // unique
+  $emails = array_values(array_unique($emails));
+  return $emails;
+}
+
+/**
+ * Send HTML email using PHP mail().
+ * (SMTP support can be added later if you want.)
+ */
+function portal_send_mail_native(string $to, string $subject, string $html, string $from_email, string $from_name): bool {
+  $from_email = trim($from_email);
+  $from_name  = trim($from_name);
+
+  // Encode subject for UTF-8
+  $enc_subject = mb_encode_mimeheader($subject, 'UTF-8', 'B');
+  $enc_from_name = mb_encode_mimeheader($from_name, 'UTF-8', 'B');
+
+  $headers = [];
+  $headers[] = 'MIME-Version: 1.0';
+  $headers[] = 'Content-type: text/html; charset=UTF-8';
+  if ($from_email !== '') {
+    $headers[] = 'From: ' . ($enc_from_name !== '' ? $enc_from_name . ' ' : '') . '<' . $from_email . '>';
+    $headers[] = 'Reply-To: ' . $from_email;
+  }
+  $headers[] = 'X-Mailer: PHP/' . phpversion();
+
+  return @mail($to, $enc_subject, $html, implode("\r\n", $headers));
+}
+
+/**
+ * Dev helper: write the outgoing email as an .eml file (no real sending).
+ * Set config_denuncia.php: $DENUNCIA_MAIL['mode'] = 'file'
+ */
+function portal_send_mail_file(string $to, string $subject, string $html, string $from_email, string $from_name): bool {
+  $dir = __DIR__ . '/outbox';
+  if (!is_dir($dir)) {
+    @mkdir($dir, 0777, true);
+  }
+  if (!is_dir($dir) || !is_writable($dir)) return false;
+
+  $date = date('r');
+  $from = trim($from_name) !== ''
+    ? mb_encode_mimeheader($from_name, 'UTF-8', 'B') . " <{$from_email}>"
+    : "<{$from_email}>";
+
+  $headers = [];
+  $headers[] = "Date: {$date}";
+  $headers[] = "To: {$to}";
+  $headers[] = "From: {$from}";
+  $headers[] = 'MIME-Version: 1.0';
+  $headers[] = 'Content-Type: text/html; charset=UTF-8';
+  $headers[] = 'Subject: ' . mb_encode_mimeheader($subject, 'UTF-8', 'B');
+
+  $eml = implode("\r\n", $headers) . "\r\n\r\n" . $html;
+
+  $safe_to = preg_replace('/[^a-z0-9._@-]+/i', '_', $to);
+  $fname = date('Ymd_His') . '_' . $safe_to . '.eml';
+  return (bool)@file_put_contents($dir . '/' . $fname, $eml);
+}
+
+/**
+ * Build and send notification email for a newly created report.
+ * Returns true if at least one email was sent successfully.
+ */
+function portal_notify_new_report(mysqli $db, int $report_id): bool {
+  if (!portal_mail_enabled() || $report_id <= 0) return false;
+
+  // Load report details
+  $sql = "
+    SELECT r.id, r.report_key, r.subject, r.description, r.location, r.occurred_at, r.created_at,
+           c.id AS company_id, c.name AS company_name,
+           cat.id AS category_id, cat.name AS category_name
+    FROM portal_report r
+    JOIN portal_company c ON c.id = r.company_id
+    LEFT JOIN portal_category cat ON cat.id = r.category_id
+    WHERE r.id = ?
+    LIMIT 1
+  ";
+  $stmt = $db->prepare($sql);
+  if (!$stmt) return false;
+  $stmt->bind_param('i', $report_id);
+  $stmt->execute();
+  $rep = $stmt->get_result()->fetch_assoc();
+  $stmt->close();
+  if (!$rep) return false;
+
+  $company_id = (int)($rep['company_id'] ?? 0);
+  $category_id = (int)($rep['category_id'] ?? 0);
+
+  $recipients = portal_get_notify_recipients($db, $company_id, $category_id);
+  if (empty($recipients)) return false;
+
+  $cfg = portal_mail_cfg();
+  $from_email = (string)($cfg['from_email'] ?? '');
+  $from_name  = (string)($cfg['from_name'] ?? '');
+  $include_desc = (bool)($cfg['include_description'] ?? true);
+  $max_chars = (int)($cfg['description_max_chars'] ?? 700);
+  if ($max_chars <= 0) $max_chars = 700;
+
+  $company_name  = (string)($rep['company_name'] ?? '');
+  $category_name = (string)($rep['category_name'] ?? '-');
+  $report_key    = (string)($rep['report_key'] ?? '');
+  $title         = (string)($rep['subject'] ?? '');
+  $location      = (string)($rep['location'] ?? '-');
+  $occurred_at   = (string)($rep['occurred_at'] ?? '-');
+  $created_at    = (string)($rep['created_at'] ?? '');
+
+  // Description trimmed
+  $desc = (string)($rep['description'] ?? '');
+  $desc = trim($desc);
+  if (!$include_desc) $desc = '';
+  if ($desc !== '' && mb_strlen($desc) > $max_chars) {
+    $desc = mb_substr($desc, 0, $max_chars) . "…";
+  }
+
+  $subject_mail = "[Canal de Denuncias] Nuevo reporte - {$company_name}";
+  if ($category_name && $category_name !== '-') $subject_mail .= " - {$category_name}";
+
+  // Build URLs
+  $base = rtrim((string)base_url(), '/');
+  // seguimiento.php can receive key param (if you want to pre-fill)
+  $seguimiento_url = $base . "/seguimiento.php?key=" . rawurlencode($report_key);
+
+  $html = "";
+  $html .= "<div style=\"font-family:Arial,Helvetica,sans-serif; color:#111827; line-height:1.5\">";
+  $html .= "<h2 style=\"margin:0 0 10px\">Nuevo reporte recibido</h2>";
+  $html .= "<p style=\"margin:0 0 10px\">Se ha recibido un nuevo reporte en el Canal de Denuncias.</p>";
+  $html .= "<table cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse; width:100%; max-width:720px\">";
+  $row = function($k, $v){
+    $k = htmlspecialchars((string)$k, ENT_QUOTES, 'UTF-8');
+    $v = htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+    return "<tr><td style=\"padding:6px 8px; border:1px solid #e5e7eb; width:220px; background:#f8fafc\"><b>{$k}</b></td><td style=\"padding:6px 8px; border:1px solid #e5e7eb\">{$v}</td></tr>";
+  };
+  $html .= $row('Número de seguimiento', $report_key);
+  $html .= $row('Empresa', $company_name);
+  $html .= $row('Categoría', $category_name);
+  $html .= $row('Título', $title);
+  $html .= $row('Lugar', $location);
+  $html .= $row('Fecha del evento', $occurred_at);
+  $html .= $row('Fecha de envío', $created_at);
+  $html .= "</table>";
+
+  if ($desc !== '') {
+    $safe_desc = htmlspecialchars($desc, ENT_QUOTES, 'UTF-8');
+    $html .= "<h3 style=\"margin:14px 0 8px\">Descripción (resumen)</h3>";
+    $html .= "<div style=\"white-space:pre-wrap; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; background:#fff\">{$safe_desc}</div>";
+  }
+
+  $html .= "<p style=\"margin:14px 0 0\">Link (requiere clave + contraseña del reportante para ver el caso):<br>";
+  $html .= "<a href=\"" . htmlspecialchars($seguimiento_url, ENT_QUOTES, 'UTF-8') . "\">" . htmlspecialchars($seguimiento_url, ENT_QUOTES, 'UTF-8') . "</a></p>";
+  $html .= "<p style=\"margin:14px 0 0; color:#6b7280; font-size:12px\">Este correo es automático. No responder.</p>";
+  $html .= "</div>";
+
+  $sent_any = false;
+  foreach ($recipients as $to) {
+    $ok = false;
+    $mode = strtolower((string)($cfg['mode'] ?? 'mail'));
+    if ($mode === 'file') {
+      $ok = portal_send_mail_file($to, $subject_mail, $html, $from_email, $from_name);
+    } elseif ($mode === 'mail' || $mode === '') {
+      $ok = portal_send_mail_native($to, $subject_mail, $html, $from_email, $from_name);
+    } else {
+      // reserved for future SMTP upgrade
+      $ok = portal_send_mail_native($to, $subject_mail, $html, $from_email, $from_name);
+    }
+    if ($ok) $sent_any = true;
+  }
+
+  return $sent_any;
+}

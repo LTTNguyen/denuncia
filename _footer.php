@@ -2,8 +2,6 @@
       <div class="hr"></div>
       <div>
         <span class="badge">Demo</span>
-        <span style="margin-left:8px">
-        </span>
       </div>
     </div>
   </div>
