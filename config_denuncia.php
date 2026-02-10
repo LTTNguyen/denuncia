@@ -8,16 +8,7 @@ $DENUNCIA_DB = [
   'charset' => 'utf8mb4',
 ];
 
-/**
- * Email notifications (new report)
- *
- * IMPORTANT:
- * - Default mode uses PHP mail() which requires mail transport configured.
- * - Recommended for production: use SMTP (PHPMailer is not bundled yet in this demo).
- *
- * Recipients are normally taken from DB table: portal_notify_recipient.
- * If the table does not exist, the system uses fallback_recipients below.
- */
+
 $DENUNCIA_MAIL = [
   'enabled' => true,
 
@@ -26,9 +17,8 @@ $DENUNCIA_MAIL = [
   'from_name'  => 'Canal de Denuncias',
 
   // 'mail' = PHP mail(); 'smtp' reserved for future upgrade
-  'mode' => 'file',
+  'mode' => 'mail',
 
-  // If you haven't created portal_notify_recipient yet, notifications go here.
   'fallback_recipients' => ['thuy.nguyen@tymelectricos.cl'],
 
   // Content controls

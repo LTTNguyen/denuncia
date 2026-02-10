@@ -15,10 +15,7 @@ $resources = $company_id > 0 ? portal_get_resources($db, $company_id) : [];
 
 $base = rtrim(base_url(), '/');
 
-/**
- * IMPORTANT (Linux): file name is case-sensitive.
- * Put your hero image in /images/hero.jpg (or update this path).
- */
+
 $hero_url    = $base . "/images/No_image_available.png";  // <-- change to your real image file
 $logo_tym    = $base . "/images/tym_logo.png";
 $logo_andes  = $base . "/images/logo_andes_pic.png";
