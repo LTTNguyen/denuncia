@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   $is_anonymous = isset($_POST['is_anonymous']) ? 1 : 0;
   $reporter_name = trim((string)($_POST['reporter_name'] ?? ''));
-  $reporter_email = trim((string)($_POST['reporter_email'] ?? ''));
+  $reporter_email = trim((string)($_POST['reporter_email'] ?? 'no@mail.cl'));
   $pw = (string)($_POST['password'] ?? '');
   $pw2 = (string)($_POST['password2'] ?? '');
 
@@ -179,13 +179,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $success = ['report_key' => $report_key, 'company_id' => $company_id];
+          }else{
+            // SEND MAIL TO RECIPIENTS always to: denuncias@tymelectricos.cl - and ONLY if report has a email
           }
         }
       }
     }
   }
 }
-
+// no-responder@tymelectricos.cl   - This is the mail to send, not to receive
 // build company map for JS (update chip + url)
 $company_map = [];
 foreach ($companies as $c) {

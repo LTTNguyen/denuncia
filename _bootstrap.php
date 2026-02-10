@@ -72,12 +72,13 @@ function db_conn(): mysqli {
   global $DENUNCIA_DB;
   $host = $DENUNCIA_DB['host'] ?? 'localhost';
   $user = $DENUNCIA_DB['user'] ?? 'root';
-  $pass = $DENUNCIA_DB['pass'] ?? '';
-  $name = $DENUNCIA_DB['name'] ?? '';
+  $pass = $DENUNCIA_DB['pass'] ?? 'quz@*W7Yaxb9[sUU';
+  $name = $DENUNCIA_DB['name'] ?? 'denuncias_portal';
   $port = (int)($DENUNCIA_DB['port'] ?? 3306);
   $charset = $DENUNCIA_DB['charset'] ?? 'utf8mb4';
 
   $db = @new mysqli($host, $user, $pass, $name, $port);
+
   if ($db->connect_error) {
     throw new Exception('DB connection failed: ' . $db->connect_error);
   }
