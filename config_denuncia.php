@@ -17,7 +17,7 @@ $DENUNCIA_MAIL = [
   'from_name'  => 'Canal de Denuncias',
 
   // 'mail' = PHP mail(); 'smtp' reserved for future upgrade
-  'mode' => 'mail',
+  'mode' => 'file',
 
   'fallback_recipients' => ['thuy.nguyen@tymelectricos.cl'],
 
