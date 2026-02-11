@@ -8,6 +8,9 @@ $DENUNCIA_DB = [
   'charset' => 'utf8mb4',
 ];
 
+$DENUNCIA_PORTAL = [
+  'single_company_id' => 1
+];
 
 $DENUNCIA_MAIL = [
   'enabled' => true,

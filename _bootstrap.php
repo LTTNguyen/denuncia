@@ -2,7 +2,6 @@
 if (defined('DENUNCIA_BOOTSTRAP_LOADED')) { return; }
 define('DENUNCIA_BOOTSTRAP_LOADED', 1);
 
-
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
@@ -27,7 +26,27 @@ function redirect(string $path): void {
   exit;
 }
 
-// Session isolation
+// LOAD CONFIG
+$cfg = __DIR__ . '/config_denuncia.php';
+if (!is_file($cfg)) {
+  http_response_code(500);
+  echo "<h3>Missing config_denuncia.php</h3>";
+  exit;
+}
+require_once $cfg;
+
+
+function current_company_id(): int {
+  global $DENUNCIA_PORTAL;
+
+  $cid = (int)($DENUNCIA_PORTAL['single_company_id'] ?? 0);
+  if ($cid > 0) return $cid;
+
+  // Hard fallback: TyM id = 1
+  return 1;
+}
+
+// SESSION ISOLATION
 if (session_status() === PHP_SESSION_NONE) {
   session_name('DENUNCIASESSID');
 
@@ -42,26 +61,10 @@ if (session_status() === PHP_SESSION_NONE) {
   ]);
 
   session_start();
-
-// Remember company context (keep selection across pages)
-$__cid = (int)($_GET['company_id'] ?? ($_POST['company_id'] ?? ($_SESSION['company_id'] ?? 0)));
-if ($__cid > 0) {
-  $_SESSION['company_id'] = $__cid;
-}
-function current_company_id(): int {
-  return (int)($_SESSION['company_id'] ?? 0);
 }
 
-}
-
-//Load DB config
-$cfg = __DIR__ . '/config_denuncia.php';
-if (!is_file($cfg)) {
-  http_response_code(500);
-  echo "<h3>Missing config_denuncia.php</h3>";
-  exit;
-}
-require_once $cfg;
+// Force single-company into session (compatibility for older code)
+$_SESSION['company_id'] = current_company_id();
 
 // DB connection
 function db_conn(): mysqli {
@@ -138,8 +141,7 @@ if (!function_exists('portal_get_resources')) {
   }
 }
 
-
-//Branding helpers
+// Branding helpers
 function portal_company_logo_path(array $c): string {
   $p = trim((string)($c['logo_path'] ?? ''));
   if ($p !== '') return $p;
@@ -167,6 +169,7 @@ function portal_find_company(array $companies, int $company_id): ?array {
   return null;
 }
 
+
 function portal_link(string $path, bool $with_company = true): string {
   $url = rtrim(base_url(), '/') . $path;
   if ($with_company) {
@@ -179,9 +182,7 @@ function portal_link(string $path, bool $with_company = true): string {
   return $url;
 }
 
-// =========================================================
 // EMAIL NOTIFICATIONS (new report)
-// =========================================================
 
 function portal_mail_cfg(): array {
   global $DENUNCIA_MAIL;
@@ -249,20 +250,16 @@ function portal_get_notify_recipients(mysqli $db, int $company_id, int $category
     }
   }
 
-  // unique
-  $emails = array_values(array_unique($emails));
-  return $emails;
+  return array_values(array_unique($emails));
 }
 
 /**
  * Send HTML email using PHP mail().
- * (SMTP support can be added later if you want.)
  */
 function portal_send_mail_native(string $to, string $subject, string $html, string $from_email, string $from_name): bool {
   $from_email = trim($from_email);
   $from_name  = trim($from_name);
 
-  // Encode subject for UTF-8
   $enc_subject = mb_encode_mimeheader($subject, 'UTF-8', 'B');
   $enc_from_name = mb_encode_mimeheader($from_name, 'UTF-8', 'B');
 
@@ -279,7 +276,7 @@ function portal_send_mail_native(string $to, string $subject, string $html, stri
 }
 
 /**
- * Dev helper: write the outgoing email as an .eml file (no real sending).
+ * Dev helper: write outgoing email as .eml file (no real sending)
  * Set config_denuncia.php: $DENUNCIA_MAIL['mode'] = 'file'
  */
 function portal_send_mail_file(string $to, string $subject, string $html, string $from_email, string $from_name): bool {
@@ -316,7 +313,6 @@ function portal_send_mail_file(string $to, string $subject, string $html, string
 function portal_notify_new_report(mysqli $db, int $report_id): bool {
   if (!portal_mail_enabled() || $report_id <= 0) return false;
 
-  // Load report details
   $sql = "
     SELECT r.id, r.report_key, r.subject, r.description, r.location, r.occurred_at, r.created_at,
            c.id AS company_id, c.name AS company_name,
@@ -356,7 +352,6 @@ function portal_notify_new_report(mysqli $db, int $report_id): bool {
   $occurred_at   = (string)($rep['occurred_at'] ?? '-');
   $created_at    = (string)($rep['created_at'] ?? '');
 
-  // Description trimmed
   $desc = (string)($rep['description'] ?? '');
   $desc = trim($desc);
   if (!$include_desc) $desc = '';
@@ -367,9 +362,7 @@ function portal_notify_new_report(mysqli $db, int $report_id): bool {
   $subject_mail = "[Canal de Denuncias] Nuevo reporte - {$company_name}";
   if ($category_name && $category_name !== '-') $subject_mail .= " - {$category_name}";
 
-  // Build URLs
   $base = rtrim((string)base_url(), '/');
-  // seguimiento.php can receive key param (if you want to pre-fill)
   $seguimiento_url = $base . "/seguimiento.php?key=" . rawurlencode($report_key);
 
   $html = "";
@@ -408,10 +401,7 @@ function portal_notify_new_report(mysqli $db, int $report_id): bool {
     $mode = strtolower((string)($cfg['mode'] ?? 'mail'));
     if ($mode === 'file') {
       $ok = portal_send_mail_file($to, $subject_mail, $html, $from_email, $from_name);
-    } elseif ($mode === 'mail' || $mode === '') {
-      $ok = portal_send_mail_native($to, $subject_mail, $html, $from_email, $from_name);
     } else {
-      // reserved for future SMTP upgrade
       $ok = portal_send_mail_native($to, $subject_mail, $html, $from_email, $from_name);
     }
     if ($ok) $sent_any = true;

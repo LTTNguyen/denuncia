@@ -3,47 +3,40 @@ $page_title = "Canal de Denuncias";
 require_once __DIR__ . "/_header.php";
 
 $db = db_conn();
-$companies = get_companies($db);
 
-$company_id = isset($_GET['company_id']) ? (int)$_GET['company_id'] : 0;
-if ($company_id <= 0 && !empty($companies)) $company_id = (int)$companies[0]['id'];
+// SINGLE COMPANY (TyM) – company_id fixed by _bootstrap.php
+$company_id = current_company_id();
 
-$_SESSION['company_id'] = $company_id; // keep selection consistent
+// Optional (safe): load company row if you want to use name/logo from DB later
+$company = null;
+try {
+  $companies = get_companies($db);
+  $company = ($company_id > 0) ? portal_find_company($companies, $company_id) : null;
+} catch (Throwable $e) {
+  // ignore
+}
 
-$company = portal_find_company($companies, $company_id);
-$resources = $company_id > 0 ? portal_get_resources($db, $company_id) : [];
+$resources = ($company_id > 0) ? portal_get_resources($db, $company_id) : [];
 
 $base = rtrim(base_url(), '/');
 
+$hero_url = $base . "/images/servicios_elctricos_tym_ltda_cover.jpg"; // hero image
+$logo_tym = $base . "/images/tym_logo.png";
 
-$hero_url    = $base . "/images/No_image_available.png";  // <-- change to your real image file
-$logo_tym    = $base . "/images/tym_logo.png";
-$logo_andes  = $base . "/images/logo_andes_pic.png";
-$logo_rk     = $base . "/images/logo_rk.png";
-
-// external websites for logo clicks
-$link_tym   = "https://www.tymelectricos.cl/";
-$link_andes = "https://andessuministros.cl/";
-$link_rk    = "https://www.rkmaestranza.cl/";
+// external website for logo click
+$link_tym = "https://www.tymelectricos.cl/";
 
 // demo links (when DB has no resources)
 $demo_docs = [
-  ["title" => "Código de Conducta (demo)", "url" => $base . "/blank.php?doc=codigo_conducta"],
-  ["title" => "Reportes trimestrales (demo)", "url" => $base . "/blank.php?doc=reportes_trimestrales"],
+  ["title" => "Notas internas", "url" => $base . "/blank.php?doc=codigo_conducta"],
 ];
 ?>
 
 <!-- TOP BAR (logos left, language right) -->
 <div class="home-topbar">
   <div class="home-logos">
-    <a class="home-logo-link" href="<?= h($link_tym) ?>" target="_blank" rel="noopener" aria-label="T&M Electricos">
-      <img src="<?= h($logo_tym) ?>" alt="T&M">
-    </a>
-    <a class="home-logo-link" href="<?= h($link_andes) ?>" target="_blank" rel="noopener" aria-label="Andes Suministros">
-      <img src="<?= h($logo_andes) ?>" alt="Andes">
-    </a>
-    <a class="home-logo-link" href="<?= h($link_rk) ?>" target="_blank" rel="noopener" aria-label="RK Maestranza">
-      <img src="<?= h($logo_rk) ?>" alt="RK">
+    <a class="home-logo-link" href="<?= h($link_tym) ?>" target="_blank" rel="noopener" aria-label="Servicios Eléctricos TyM">
+      <img src="<?= h($logo_tym) ?>" alt="TyM">
     </a>
   </div>
 
@@ -55,33 +48,31 @@ $demo_docs = [
 
 <div class="home-wrap">
 
-  <!-- Company selector (keeps your multi-company behavior) -->
-
   <!-- 3 big tiles -->
   <div class="home-tiles">
-    <a class="home-tile" href="<?= h(base_url()) ?>/reportar.php?company_id=<?= (int)$company_id ?>">
+    <a class="home-tile" href="<?= h($base) ?>/reportar.php">
       <div class="icon">!</div>
       <div class="title">Presentar una denuncia</div>
     </a>
 
-    <a class="home-tile" href="<?= h(base_url()) ?>/seguimiento.php">
+    <a class="home-tile" href="<?= h($base) ?>/seguimiento.php">
       <div class="icon">↻</div>
       <div class="title">Seguimiento</div>
     </a>
 
-    <a class="home-tile" href="<?= h(base_url()) ?>/faq.php">
+    <a class="home-tile" href="<?= h($base) ?>/faq.php">
       <div class="icon">?</div>
       <div class="title">Preguntas frecuentes</div>
     </a>
   </div>
 
-  <!-- Content (2 columns with divider like Codelco) -->
+  <!-- Content (2 columns with divider) -->
   <div class="home-content">
     <div class="home-box home-left">
       <h3>Archivos disponibles para consulta</h3>
 
       <?php if (empty($resources)): ?>
-        <div class="small">No hay documentos para esta empresa (demo). Enlaces de ejemplo:</div>
+        <div class="small">No hay documentos disponibles (demo). Enlaces de ejemplo:</div>
         <ul class="home-links">
           <?php foreach ($demo_docs as $d): ?>
             <li>
@@ -123,7 +114,7 @@ $demo_docs = [
   </div>
 
   <div class="home-footer">
-    <div>Copyright © <?= date('Y') ?> T&M / Andes / RK. All rights reserved.</div>
+    <div>Copyright © <?= date('Y') ?> Servicios Eléctricos TyM LTDA. All rights reserved.</div>
     <div style="display:flex; gap:14px; flex-wrap:wrap;">
       <a href="<?= h($base) ?>/blank.php?doc=privacy" target="_blank" rel="noopener">Privacy</a>
       <a href="<?= h($base) ?>/blank.php?doc=acceptable_use" target="_blank" rel="noopener">Acceptable Use</a>

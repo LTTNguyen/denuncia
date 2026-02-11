@@ -1,27 +1,38 @@
 :root{
+  /* TyM brand core */
+  --tm-blue:#0B3D91;
+  --tm-blue-2:#1E63D6;
+  --tm-red:#D71920;
+
+  /* Base UI */
   --bg:#f5f7fb;
   --card:#ffffff;
   --text:#0f172a;
   --muted:#475569;
   --line:#e5e7eb;
+
   --shadow: 0 10px 30px rgba(2,6,23,.08);
   --shadow-sm: 0 6px 18px rgba(2,6,23,.06);
-  --primary:#2563eb;
-  --primary-weak: rgba(37,99,235,.10);
-  --danger:#dc2626;
+
+  /* Theme */
+  --primary: var(--tm-blue);
+  --primary-weak: rgba(11,61,145,.10);
+  --danger: var(--tm-red);
   --success:#16a34a;
+
   --radius:18px;
 }
 
 *{box-sizing:border-box}
 html,body{height:100%}
+
 body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   color:var(--text);
   background:
-    radial-gradient(1200px 800px at 20% 0%, rgba(37,99,235,.10), transparent 60%),
-    radial-gradient(900px 700px at 90% 10%, rgba(34,197,94,.08), transparent 55%),
+    radial-gradient(1200px 800px at 18% 0%, rgba(11,61,145,.10), transparent 60%),
+    radial-gradient(900px 700px at 92% 12%, rgba(215,25,32,.08), transparent 55%),
     var(--bg);
 }
 
@@ -33,9 +44,7 @@ a:hover{text-decoration:underline}
   margin:28px auto 56px;
 }
 
-/* =========================
-   DEFAULT HEADER (non-home pages)
-========================= */
+/* DEFAULT HEADER (non-home pages) */
 .header{
   display:flex;
   align-items:center;
@@ -66,7 +75,7 @@ a:hover{text-decoration:underline}
 
 .brand-badge{
   width:46px;height:46px;border-radius:14px;
-  background: linear-gradient(135deg, rgba(37,99,235,.18), rgba(34,197,94,.12));
+  background: linear-gradient(135deg, rgba(11,61,145,.18), rgba(215,25,32,.10));
   border:1px solid var(--line);
   box-shadow: var(--shadow-sm);
 }
@@ -107,7 +116,7 @@ a:hover{text-decoration:underline}
   text-decoration:none;
   transform: translateY(-1px);
   box-shadow: var(--shadow);
-  border-color: rgba(37,99,235,.25);
+  border-color: rgba(11,61,145,.28);
 }
 .pill.active{
   background: var(--primary);
@@ -182,8 +191,8 @@ a:hover{text-decoration:underline}
 }
 .field textarea{min-height:140px; resize:vertical}
 .field select:focus, .field input:focus, .field textarea:focus{
-  border-color: rgba(37,99,235,.55);
-  box-shadow: 0 0 0 4px rgba(37,99,235,.14);
+  border-color: rgba(11,61,145,.55);
+  box-shadow: 0 0 0 4px rgba(11,61,145,.14);
 }
 
 .list{
@@ -224,7 +233,7 @@ a:hover{text-decoration:underline}
 .btn:hover{
   transform: translateY(-1px);
   box-shadow: var(--shadow);
-  border-color: rgba(37,99,235,.25);
+  border-color: rgba(11,61,145,.25);
   text-decoration:none;
 }
 .btn:active{ transform: translateY(0); }
@@ -254,7 +263,7 @@ a:hover{text-decoration:underline}
   gap:10px;
   padding:10px 12px;
   border-radius: 16px;
-  border:1px solid rgba(37,99,235,.18);
+  border:1px solid rgba(11,61,145,.18);
   background: var(--primary-weak);
   margin-bottom: 12px;
 }
@@ -280,9 +289,7 @@ a:hover{text-decoration:underline}
   margin:0;
 }
 
-/* =========================
-   HOME (index.php)
-========================= */
+/* HOME (index.php) */
 body.home{
   background:#fff;
 }
@@ -295,6 +302,7 @@ body.home .container{
 /* Hide the default footer badge on home (we'll render our own) */
 body.home .footer{ display:none; }
 
+
 .home-topbar{
   width:min(1120px, calc(100% - 48px));
   margin:0 auto;
@@ -302,42 +310,51 @@ body.home .footer{ display:none; }
   align-items:center;
   justify-content:space-between;
   gap:16px;
-  padding:18px 0;
+
+  /* gọn hơn */
+  padding:12px 0;
   background:#fff;
+  border-bottom:1px solid var(--line);
 }
+
 .home-logos{
   display:flex;
   align-items:center;
-  gap:22px;
+  gap:14px; 
   flex-wrap:wrap;
 }
+
 .home-logo-link{
   display:inline-flex;
   align-items:center;
   text-decoration:none;
 }
 .home-logo-link:hover{ opacity:.9; }
+
 .home-logos img{
-  height:34px;
+  height:56px;
   width:auto;
   object-fit:contain;
   display:block;
 }
+
 .home-lang{
   font-size:14px;
-  color:var(--text);
+  color:var(--muted);
 }
 
 .home-hero{
-  height:360px;
-  background:#f3f4f6;
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
+  height: 260px;
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
 }
+
+/* responsive topbar */
 @media (max-width: 980px){
-  .home-topbar{ width:calc(100% - 24px); padding:14px 0; }
+  .home-topbar{ width:calc(100% - 24px); padding:12px 0; }
   .home-hero{ height:220px; }
+  .home-logos img{ height:48px; }
 }
 
 .home-wrap{
@@ -348,87 +365,170 @@ body.home .footer{ display:none; }
   .home-wrap{ width:calc(100% - 24px); }
 }
 
+/* =========================
+   HOME TILES (3 buttons) - TyM brand (clean + clipped)
+========================= */
 .home-tiles{
-  margin-top:10px;
-  border:1px solid #d1d5db;
-  background:#eee;
+  margin-top:14px;
   display:grid;
   grid-template-columns:repeat(3, 1fr);
-  overflow:hidden;
+  gap:14px;
+
+  border:none;
+  background:transparent;
+  overflow:visible;
 }
+
 .home-tile{
-  background:#e9e9e9;
-  padding:26px 20px;
+  /* per-tile variables (overridden by nth-child below) */
+  --tile-accent: var(--tm-blue);
+  --tile-accent2: rgba(11,61,145,.55);
+  --tile-soft: rgba(11,61,145,.10);
+  --tile-border: rgba(15,23,42,.08);
+
+  position:relative;
+  background:#fff;
+  padding:22px 18px;
   text-decoration:none;
   color:var(--text);
+
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:14px;
+  gap:12px;
+
   min-height:160px;
-  border-right:1px solid #cfcfcf;
+  border-radius:22px;
+  border:1px solid var(--tile-border);
+  box-shadow: var(--shadow-sm);
+
+  /* fixes uneven top strip edge */
+  overflow:hidden;
+
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, filter .16s ease;
 }
-.home-tile:last-child{ border-right:none; }
-.home-tile:hover{ text-decoration:none; background:#f0f0f0; }
+
+.home-tile::before{
+  content:"";
+  position:absolute;
+  left:0; top:0;
+  width:100%;
+  height:6px;
+  border-radius:22px 22px 0 0;
+
+  /* clean gradient (no transparent fade) */
+  background: linear-gradient(90deg, var(--tile-accent), var(--tile-accent2));
+
+  transform: translateZ(0);
+}
+
+.home-tile:hover{
+  text-decoration:none;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(2,6,23,.12);
+  border-color: rgba(11,61,145,.22);
+  filter: brightness(1.01);
+}
+.home-tile:active{
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
 
 .home-tile .icon{
-  width:66px;
-  height:66px;
+  width:62px;
+  height:62px;
   border-radius:999px;
-  border:4px solid #f59e0b;
   display:grid;
   place-items:center;
+
   font-weight:900;
   font-size:30px;
-  color:#f59e0b;
-  background:#fff;
+
+  color: var(--tile-accent);
+  background: var(--tile-soft);
+
+  border: 1px solid rgba(15,23,42,.08);
+  box-shadow: 0 10px 22px rgba(2,6,23,.10);
+
+  transition: transform .16s ease, box-shadow .16s ease;
 }
+.home-tile:hover .icon{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(2,6,23,.14);
+}
+
 .home-tile .title{
-  font-size:26px;
-  font-weight:800;
-  color:#4b5563;
+  font-size:24px;
+  font-weight:900;
+  letter-spacing:.2px;
+  color:#0b1220;
+  text-align:center;
+}
+
+/* Tile accents: 1=Denuncia (red), 2=Seguimiento (blue), 3=FAQ (blue->red) */
+.home-tile:nth-child(1){
+  --tile-accent: var(--tm-red);
+  --tile-accent2: rgba(215,25,32,.55);
+  --tile-soft: rgba(215,25,32,.10);
+  --tile-border: rgba(215,25,32,.16);
+}
+
+.home-tile:nth-child(2){
+  --tile-accent: var(--tm-blue);
+  --tile-accent2: rgba(11,61,145,.55);
+  --tile-soft: rgba(11,61,145,.10);
+  --tile-border: rgba(11,61,145,.16);
+}
+
+.home-tile:nth-child(3){
+  --tile-accent: var(--tm-blue);
+  --tile-accent2: var(--tm-red);
+  --tile-soft: rgba(11,61,145,.08);
+  --tile-border: rgba(11,61,145,.14);
 }
 
 @media (max-width: 980px){
   .home-tiles{ grid-template-columns:1fr; }
-  .home-tile{ border-right:none; border-bottom:1px solid #cfcfcf; }
-  .home-tile:last-child{ border-bottom:none; }
 }
 
+/* HOME content (2 columns with divider) - balanced like the reference site */
 .home-content{
   display:grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  gap:24px;
+  grid-template-columns: 0.72fr 1.28fr; /* left narrower, right wider */
+  gap:20px;                              /* a bit tighter */
   padding:22px 0;
+  align-items:start;
 }
+
 .home-box{
   background:#fff;
-  padding:6px 0;
+  padding:0; /* remove extra internal padding that makes it feel "empty" */
 }
-.home-box h3{
-  margin:0 0 10px;
-  font-size:16px;
+
+.home-box.home-left{
+  padding-right:18px; /* tighter than 24px */
 }
+
 .home-box.home-right{
   border-left:1px solid var(--line);
-  padding-left:24px;
+  padding-left:18px;  /* tighter than 24px */
 }
-.home-box.home-left{
-  padding-right:24px;
-}
+
+/* mobile keeps 1 column */
 @media (max-width: 980px){
-  .home-content{ grid-template-columns:1fr; }
+  .home-content{ grid-template-columns:1fr; gap:16px; }
   .home-box.home-right{ border-left:none; padding-left:0; }
   .home-box.home-left{ padding-right:0; }
 }
+
 
 .home-links{
   margin:0;
   padding-left:18px;
 }
 .home-links li{ margin:7px 0; }
-.home-links li::marker{ color:#f97316; }
+.home-links li::marker{ color: var(--tm-red); }
 .home-links a{ color:#0f172a; text-decoration:underline; }
 .home-links a:hover{ color:var(--primary); }
 
@@ -440,8 +540,8 @@ body.home .footer{ display:none; }
 
 .home-warning{
   padding:10px 0 22px;
-  color:#b45309;
-  font-weight:700;
+  color: var(--tm-red);
+  font-weight:800;
 }
 
 .home-footer{
