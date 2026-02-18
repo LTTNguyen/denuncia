@@ -15,7 +15,7 @@ require 'src/SMTP.php';
 //if (isset($_POST["email"])) {
 
   $correo = "denuncias@tymelectricos.cl";
-  $remitente = "victor.pbravo@gmail.com";//$_POST["email"] no@mail.cl
+  $remitente = "thuynguyen200k@gmail.com";//$_POST["email"] no@mail.cl
 
 $valid = PHPMailer::ValidateAddress($correo);
   if ($valid == false) {

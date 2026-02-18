@@ -1,0 +1,62 @@
+/* Admin-only extras (keep portal.css as base) */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+.table th, .table td {
+  padding: 12px 12px;
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+.table thead th {
+  border-top: none;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.table tr:hover td {
+  background: #fafafa;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 10px 14px;
+}
+.kv .k {
+  color: var(--muted);
+  font-size: 13px;
+}
+.kv .v {
+  font-size: 14px;
+}
+
+.tag-neutral {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #374151;
+}
+.tag-info {
+  background: #eef2ff;
+  border-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.timeline {
+  display: grid;
+  gap: 10px;
+}
+.timeline .item {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+.timeline .meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+}

@@ -124,9 +124,7 @@ a:hover{text-decoration:underline}
   color:#fff;
 }
 
-/* =========================
-   LAYOUT BASICS
-========================= */
+/* LAYOUT BASICS*/
 .grid{
   display:grid;
   grid-template-columns: 1.3fr .9fr;
@@ -344,11 +342,12 @@ body.home .footer{ display:none; }
 }
 
 .home-hero{
-  height: 260px;
+  height: 260px;                    /* giảm từ 360 xuống */
   background-size: cover;
-  background-position: center 35%;
+  background-position: center 35%;  /* kéo lên/xuống để crop đẹp hơn */
   background-repeat: no-repeat;
 }
+
 
 /* responsive topbar */
 @media (max-width: 980px){
@@ -365,9 +364,7 @@ body.home .footer{ display:none; }
   .home-wrap{ width:calc(100% - 24px); }
 }
 
-/* =========================
-   HOME TILES (3 buttons) - TyM brand (clean + clipped)
-========================= */
+/* HOME TILES (3 buttons) - TyM brand (clean + clipped) */
 .home-tiles{
   margin-top:14px;
   display:grid;
@@ -561,9 +558,7 @@ body.home .footer{ display:none; }
 }
 .home-footer a:hover{ color:var(--primary); }
 
-/* =========================
-   REPORTAR (match HOME style)
-========================= */
+/* REPORTAR (match HOME style) */
 body.report{
   background:#fff;
 }
@@ -607,4 +602,11 @@ body.report .footer{
 /* ensure pills look good inside home-topbar */
 .home-topbar .pill{
   box-shadow: var(--shadow-sm);
+}
+
+/* Remove the gray divider line under the top bar */
+body.report .public-topbar,
+body.report .home-topbar{
+  border-bottom: 0 !important;
+  box-shadow: none !important;
 }

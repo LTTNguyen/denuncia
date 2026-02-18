@@ -4,10 +4,9 @@ require_once __DIR__ . "/_header.php";
 
 $db = db_conn();
 
-// SINGLE COMPANY (TyM) – company_id fixed by _bootstrap.php
+
 $company_id = current_company_id();
 
-// Optional (safe): load company row if you want to use name/logo from DB later
 $company = null;
 try {
   $companies = get_companies($db);
