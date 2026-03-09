@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . "/_admin_bootstrap.php";
+require_once __DIR__ . '/_admin_bootstrap.php';
 
 $db = db_conn();
 $admin = admin_require_login($db);
@@ -7,41 +7,57 @@ $admin = admin_require_login($db);
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) {
   http_response_code(400);
-  echo "Bad request";
+  echo 'Bad request';
   exit;
 }
 
-$st = $db->prepare("SELECT id, report_id, stored_path, original_name, mime_type, size_bytes
-                    FROM portal_report_attachment WHERE id = ? LIMIT 1");
-$st->bind_param("i", $id);
+$sql = "SELECT id, report_id, stored_path, original_name, mime_type, size_bytes
+        FROM portal_report_attachment
+        WHERE id = ?
+        LIMIT 1";
+$st = $db->prepare($sql);
+$st->bind_param('i', $id);
 $st->execute();
 $res = $st->get_result();
-$att = $res->fetch_assoc();
+$attachment = $res ? $res->fetch_assoc() : null;
 $st->close();
 
-if (!$att) {
+if (!$attachment) {
   http_response_code(404);
-  echo "Not found";
+  echo 'Not found';
   exit;
 }
 
-$rel = (string)$att['stored_path'];
-$rootUploads = realpath(__DIR__ . '/../uploads');
-$full = realpath(__DIR__ . '/../' . $rel);
+$storedPath = trim((string)$attachment['stored_path']);
+$uploadsRoot = realpath(__DIR__ . '/../uploads');
+$fullPath = realpath(__DIR__ . '/../' . ltrim($storedPath, '/\\'));
 
-if (!$rootUploads || !$full || strpos($full, $rootUploads) !== 0 || !is_file($full)) {
+if (!$uploadsRoot || !$fullPath || strpos($fullPath, $uploadsRoot) !== 0 || !is_file($fullPath)) {
   http_response_code(403);
-  echo "Forbidden";
+  echo 'Forbidden';
   exit;
 }
 
-$filename = (string)$att['original_name'];
-$mime = (string)$att['mime_type'];
+$filename = trim((string)$attachment['original_name']);
+if ($filename === '') {
+  $filename = 'attachment_' . (int)$attachment['id'];
+}
+$mime = trim((string)$attachment['mime_type']);
+if ($mime === '') {
+  $mime = 'application/octet-stream';
+}
+$fileSize = filesize($fullPath);
+
+admin_audit($db, (int)$attachment['report_id'], 'ADMIN_ATTACHMENT_DOWNLOAD', 'INVESTIGATOR', (string)$admin['email'], [
+  'attachment_id' => (int)$attachment['id'],
+  'original_name' => $filename,
+  'size_bytes' => (int)$attachment['size_bytes'],
+]);
 
 header('Content-Type: ' . $mime);
-header('Content-Length: ' . (string)filesize($full));
+header('Content-Length: ' . (string)$fileSize);
 header('Content-Disposition: attachment; filename="' . str_replace('"', '', $filename) . '"');
 header('X-Content-Type-Options: nosniff');
 
-readfile($full);
+readfile($fullPath);
 exit;

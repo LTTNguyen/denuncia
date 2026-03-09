@@ -2,9 +2,26 @@
 if (defined('DENUNCIA_BOOTSTRAP_LOADED')) { return; }
 define('DENUNCIA_BOOTSTRAP_LOADED', 1);
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+function portal_env(): string {
+  static $env = null;
+  if ($env !== null) return $env;
+  $raw = $_ENV['DENUNCIA_ENV'] ?? $_SERVER['DENUNCIA_ENV'] ?? getenv('DENUNCIA_ENV') ?: 'production';
+  $env = strtolower(trim((string)$raw));
+  return $env !== '' ? $env : 'production';
+}
 
+function portal_is_production(): bool {
+  return !in_array(portal_env(), ['local', 'dev', 'development', 'test'], true);
+}
+
+function portal_bool_config(array $cfg, string $key, bool $default = false): bool {
+  $value = $cfg[$key] ?? $default;
+  return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
+}
+
+ini_set('display_errors', portal_is_production() ? '0' : '1');
+error_reporting(E_ALL);
+mysqli_report(MYSQLI_REPORT_OFF);
 date_default_timezone_set('America/Santiago');
 
 function h($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
@@ -21,20 +38,108 @@ function base_url(): string {
 }
 
 function redirect(string $path): void {
-  header("Location: " . base_url() . $path);
+  header('Location: ' . base_url() . $path, true, 302);
   exit;
 }
-
-
-// LOAD CONFIG
 
 $cfg = __DIR__ . '/config_denuncia.php';
 if (!is_file($cfg)) {
   http_response_code(500);
-  echo "<h3>Missing config_denuncia.php</h3>";
+  echo '<h3>Missing config_denuncia.php</h3>';
   exit;
 }
 require_once $cfg;
+
+function portal_app_cfg(): array {
+  global $DENUNCIA_APP;
+  return is_array($DENUNCIA_APP ?? null) ? $DENUNCIA_APP : [];
+}
+
+function portal_trust_proxy(): bool {
+  return portal_bool_config(portal_app_cfg(), 'trust_proxy', false);
+}
+
+function portal_is_https(): bool {
+  $cfg = portal_app_cfg();
+  if (portal_bool_config($cfg, 'force_https', false)) {
+    return true;
+  }
+
+  if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    return true;
+  }
+  if ((string)($_SERVER['SERVER_PORT'] ?? '') === '443') {
+    return true;
+  }
+  if (portal_trust_proxy()) {
+    $xfp = strtolower(trim((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
+    if ($xfp === 'https') return true;
+  }
+  return false;
+}
+
+function portal_client_ip(): string {
+  $value = '';
+  if (portal_trust_proxy()) {
+    $forwarded = trim((string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
+    if ($forwarded !== '') {
+      $parts = array_map('trim', explode(',', $forwarded));
+      $value = (string)($parts[0] ?? '');
+    }
+    if ($value === '') {
+      $value = trim((string)($_SERVER['HTTP_X_REAL_IP'] ?? ''));
+    }
+  }
+  if ($value === '') {
+    $value = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+  }
+  return substr($value, 0, 45);
+}
+
+function portal_cookie_samesite(string $sessionName): string {
+  $cfg = portal_app_cfg();
+  $default = ($sessionName === 'DENUNCIAADMINSESSID')
+    ? (string)($cfg['cookie_samesite_admin'] ?? 'Strict')
+    : (string)($cfg['cookie_samesite_public'] ?? 'Lax');
+  $value = ucfirst(strtolower(trim($default)));
+  return in_array($value, ['Lax', 'Strict', 'None'], true) ? $value : 'Lax';
+}
+
+function portal_send_security_headers(): void {
+  if (headers_sent()) return;
+  $cfg = portal_app_cfg();
+  if (!portal_bool_config($cfg, 'security_headers', true)) return;
+
+  header('X-Frame-Options: SAMEORIGIN');
+  header('X-Content-Type-Options: nosniff');
+  header('Referrer-Policy: strict-origin-when-cross-origin');
+  header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+  header('Cross-Origin-Resource-Policy: same-origin');
+}
+
+portal_send_security_headers();
+
+if (session_status() === PHP_SESSION_NONE) {
+  $sessName = defined('DENUNCIA_SESSION_NAME') ? DENUNCIA_SESSION_NAME : 'DENUNCIASESSID';
+  session_name($sessName);
+
+  ini_set('session.use_only_cookies', '1');
+  ini_set('session.use_strict_mode', '1');
+  ini_set('session.cookie_httponly', '1');
+
+  $cookie_path = base_url();
+  if ($cookie_path === '') $cookie_path = '/';
+
+  session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => $cookie_path,
+    'httponly' => true,
+    'samesite' => portal_cookie_samesite($sessName),
+    'secure' => portal_is_https(),
+  ]);
+
+  session_start();
+}
 
 function current_company_id(): int {
   global $DENUNCIA_PORTAL;
@@ -86,7 +191,10 @@ function db_conn(): mysqli {
 
   $db = @new mysqli($host, $user, $pass, $name, $port);
   if ($db->connect_error) {
-    throw new Exception('DB connection failed: ' . $db->connect_error);
+    if (!portal_is_production()) {
+      throw new Exception('DB connection failed: ' . $db->connect_error);
+    }
+    throw new Exception('Database connection failed.');
   }
   $db->set_charset($charset);
 
@@ -182,7 +290,7 @@ function get_categories_by_channel(mysqli $db, int $company_id, string $channel)
 function audit_log(mysqli $db, ?int $report_id, string $action, string $actor_type='SYSTEM', ?string $actor_label=null, array $meta=[]): void {
   if (!portal_db_table_exists($db, 'portal_audit_log')) return;
 
-  $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+  $ip = portal_client_ip();
   $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
   if (strlen($ua) > 255) $ua = substr($ua, 0, 255);
 
@@ -277,10 +385,13 @@ function portal_public_base_url(): string {
   $p = trim((string)($cfg['public_base_url'] ?? ''));
   if ($p !== '') return rtrim($p, '/');
 
+  $cfgApp = portal_app_cfg();
+  $publicBase = trim((string)($cfgApp['public_base_url'] ?? ''));
+  if ($publicBase !== '') return rtrim($publicBase, '/');
+
   $host = trim((string)($_SERVER['HTTP_HOST'] ?? ''));
   if ($host !== '') {
-    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ((string)($_SERVER['SERVER_PORT'] ?? '') === '443');
-    $scheme = $is_https ? 'https' : 'http';
+    $scheme = portal_is_https() ? 'https' : 'http';
     return $scheme . '://' . $host . rtrim(base_url(), '/');
   }
 
@@ -363,7 +474,9 @@ function portal_send_mail_native(string $to, string $subject, string $html, stri
 }
 
 function portal_send_mail_file(string $to, string $subject, string $html, string $from_email, string $from_name): bool {
-  $dir = __DIR__ . '/outbox';
+  $cfg = portal_mail_cfg();
+  $dir = trim((string)($cfg['outbox_dir'] ?? ''));
+  if ($dir === '') $dir = __DIR__ . '/storage/outbox';
   if (!is_dir($dir)) @mkdir($dir, 0777, true);
   if (!is_dir($dir) || !is_writable($dir)) return false;
 
